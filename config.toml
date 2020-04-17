@@ -1,0 +1,24 @@
+baseURL = "http://example.org/"
+languageCode = "en-us"
+title = "Tech Blog"
+theme = "noteworthy"
+paginate = 10
+summaryLength = 10
+pygmentsUseClasses = true
+pygmentsCodeFences = true
+
+[params]
+github = "https://github.com/gtkramer"
+linkedin = "https://www.linkedin.com/in/george-kramer-3816691a6"
+
+[[menu.main]]
+identifier = "about"
+name = "About"
+url = "/about/"
+weight = 1
+
+[[menu.main]]
+identifier = "tags"
+name = "Tags"
+url = "/tags/"
+weight = 2
