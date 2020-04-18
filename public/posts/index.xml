@@ -12,12 +12,21 @@
     
     
     <item>
-      <title>The State of C&#43;&#43; with Flex and Bison</title>
-      <link>http://example.org/posts/state-c-plus-plus-flex-bison/</link>
+      <title>Adventures Using Flex and Bison with C&#43;&#43;</title>
+      <link>http://example.org/posts/adventures-flex-bision-cpp/</link>
       <pubDate>Sat, 13 Jan 2018 15:32:00 -0700</pubDate>
       
-      <guid>http://example.org/posts/state-c-plus-plus-flex-bison/</guid>
-      <description>The compilers class I took as an undergraduate at the University of Connecticut is the most challenging yet interesting classes I have ever taken.</description>
+      <guid>http://example.org/posts/adventures-flex-bision-cpp/</guid>
+      <description>Motivation and Goal The compilers class I took as an undergraduate at the University of Connecticut is the most challenging yet one of the most interesting classes I have ever taken.</description>
+    </item>
+    
+    <item>
+      <title>Looking at Alternative C&#43;&#43; Parsers</title>
+      <link>http://example.org/posts/alternative-cpp-parsers/</link>
+      <pubDate>Sat, 13 Jan 2018 15:32:00 -0700</pubDate>
+      
+      <guid>http://example.org/posts/alternative-cpp-parsers/</guid>
+      <description>Lemon Lemon is an interesting alternative because it’s syntax is reminiscent of Flex and bison.</description>
     </item>
     
   </channel>

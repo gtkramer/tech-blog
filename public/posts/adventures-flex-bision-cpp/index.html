@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="format-detection" content="telephone=no"/>
 
-    <title>The State of C&#43;&#43; with Flex and Bison | Tech Blog</title>
+    <title>Adventures Using Flex and Bison with C&#43;&#43; | Tech Blog</title>
     
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -130,17 +130,16 @@
         <div id="content" class="content-container">
         
 
-<h1 class="post-title">The State of C&#43;&#43; with Flex and Bison</h1>
+<h1 class="post-title">Adventures Using Flex and Bison with C&#43;&#43;</h1>
     
     <time>January 13, 2018</time>
     
     <div>
         <p>
-        <p>The compilers class I took as an undergraduate at the University of Connecticut is the most challenging yet interesting classes I have ever taken.  The project-driven class gives students hands-on experience with writing a compiler by breaking the large task into smaller subtasks over the course of the semester.  Specifically, students need to write a compiler that translates C&ndash;, a simple subset of C, to LLVM IR.  From there, students use the LLVM toolchian to finish compiling C&ndash; to machine code.</p>
-<p>To help with the scanner and the parser bits that are essential to any compiler, students use the GNU tools flex and bison.  These are time-tested text-processing programs known for not requiring any additional runtime or build requirements for the code they generate.  In this sense, the code they generate for doing the actual text processing is portable.  Who doesn&rsquo;t like portability?</p>
-<p>These text-processing programs are also mature with many years of development behind them&hellip; or so I thought once I started using them more.  The many years of development part, sure.  But the mature part?  It depends on what API or interface is being used.  Do you care about reentrancy?  Do you care about C++?  If so, buckle in for an exciting ride!</p>
-<p>I wanted to revisit my knowledge of flex and bison with a program I&rsquo;m developing outside of work.  The goal of the program is to generate the scaffolding for a model before everything is 3D printed and to provide a means for graphically interacting with the result.  The model is given to the program in the form of either a text or binary STL file.  I wanted to see if I could write a parser for a text STL file using flex and bison.</p>
-<p>The syntax for a text STL file is very simple.  It&rsquo;s given below:</p>
+        <h2 id="motivation-and-goal">Motivation and Goal</h2>
+<p>The compilers class I took as an undergraduate at the University of Connecticut is the most challenging yet one of the most interesting classes I have ever taken.  The project-driven class gave students hands-on experience with writing a compiler by breaking the large task into smaller tasks over the course of the semester.  Specifically, we needed to write a compiler that translates C--, a simple subset of C, to LLVM IR.  From there, we used the LLVM toolchian to finish compiling C-- to machine code.</p>
+<p>To help with the scanner and the parser bits that are essential to any compiler, we used the GNU tools flex and bison.  These are time-tested text-processing programs known for not requiring any additional runtime or build requirements for the code they generate.  In this sense, the code they generate for doing the actual text processing is portable.  These text-processing programs are also mature with many years of development behind them, which makes them not a bad choice.</p>
+<p>I wanted to revisit my knowledge of flex and bison with <a href="https://github.com/gtkramer/ScaffoldingGenerator">a program</a> I&rsquo;m developing outside of work.  The goal of the program is to generate the scaffolding for a model before everything is 3D printed and to provide a means for graphically interacting with the computed result.  The model is given to the program in the form of either a text or binary STL file.  I wanted to see if I could write a C++ parser for a text STL file using flex and bison.  The syntax for a text STL file is very simple.  It&rsquo;s given below:</p>
 <div class="highlight"><pre class="chroma"><code class="language-plain" data-lang="plain">solid name
 	facet normal ni nj nk
 		outer loop
@@ -150,62 +149,64 @@
 		endloop
 	endfacet
 endsolid name
-</code></pre></div><p>I wanted to treat the file as a stream to avoid scanning the file twice (one pass for finding how many facets are in the file and another pass for parsing the facets from the file).  I became interested in the C++ interface for flex and bison because I wanted to use the vector container from the Standard Template Library (STL) to accomplish this.</p>
-<p>Previous versions of bison used a union interface which only allows tokens and semantic values to be defined with trivial data types (unless pointers are used).  Bison 3.0 introduced a variant interface which allows complex data types to be used.  Suddenly, tokens and semantic values could be defined as follows:</p>
+</code></pre></div><p>I became interested in the C++ interface for flex and bison because I wanted to use the vector container from the Standard Template Library to read text STL files as streams.  Previous versions of bison used a union interface which only allows tokens and semantic values to be defined with trivial data types (unless pointers are used).  Bison 3.0 introduced a variant interface which allows complex data types to be used.  Suddenly, it was possible to define tokens and semantic values as follows:</p>
 <div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="o">%</span><span class="n">token</span> <span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span> <span class="n">FLOAT</span>
 <span class="o">%</span><span class="n">type</span> <span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span> <span class="mi">3</span><span class="o">&gt;</span><span class="p">,</span> <span class="mi">4</span><span class="o">&gt;&gt;</span> <span class="n">facet</span>
-</code></pre></div><p>These are natural definitions that are easy to read and understand.  I figured I would try to get on board with the variant interface in conjunction with the C++ interface for bison.</p>
-<p>I began looking through the GNU documentation for guidance on how to use these interfaces with bison.  I found a complete C++ example that I thought would help me to get up and going quickly: <a href="https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parser.html">https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parser.html</a>.</p>
-<p>After reading through the example, the complexity of what I&rsquo;m trying to achieve with bison becomes apparent.</p>
-<p>Two separate code sections are required for parsing.  One section is for the grammar actions, and one section is for the generated parser code overall.  The following code section is required for grammar actions to use the STL and to have detailed knlowdge about the driver, which orchestrates the parsing from the main program:</p>
+</code></pre></div><p>These are natural definitions analogous to the structure of the STL file format.  I figured I would try to get on board with the variant interface in conjunction with the C++ interface for flex and bison.  While I was at it, I wanted to see if I could also make a pure (reentrant) scanner and parser.</p>
+<h2 id="bison-c-thoughts">Bison C++ Thoughts</h2>
+<p>I began looking through the GNU documentation for guidance on how to use the variant and C++ interfaces with bison.  I found <a href="https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parser.html">a complete C++ example</a> to help me get going.</p>
+<p>After getting going, I ran into the same uncomfortable usage of bison that I remember seeing back when I was taking my compilers class.  Code is mixed with declarative syntax in different sections.  To configure bison in a good manner and to use the variant and C++ interfaces, the following declarations are required:</p>
+<div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="o">%</span><span class="n">skeleton</span> <span class="s">&#34;lalr1.cc&#34;</span>
+<span class="o">%</span><span class="n">require</span> <span class="s">&#34;3.5&#34;</span>
+<span class="o">%</span><span class="n">defines</span>
+<span class="o">%</span><span class="n">define</span> <span class="n">api</span><span class="p">.</span><span class="n">token</span><span class="p">.</span><span class="n">constructor</span>
+<span class="o">%</span><span class="n">define</span> <span class="n">api</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">type</span> <span class="n">variant</span>
+<span class="o">%</span><span class="n">define</span> <span class="n">parse</span><span class="p">.</span><span class="n">assert</span>
+</code></pre></div><p>For grammar actions to use the Standard Template Library, they need to have detailed knowledge about the driver, which orchestrates the parsing from the main program.  But the generated parser code also needs to have detailed knowledge of the driver.  This requires the following code:</p>
 <div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="o">%</span><span class="n">code</span> <span class="k">requires</span> <span class="p">{</span>
     <span class="cp">#include</span> <span class="cpf">&lt;array&gt;</span><span class="cp">
 </span><span class="cp"></span>    <span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp">
 </span><span class="cp"></span>    <span class="k">class</span> <span class="nc">StlTextDriver</span><span class="p">;</span>
 <span class="p">}</span>
-</code></pre></div><p>But the generated parser code also needs detailed knolwedge of the driver, which requires the following code section:</p>
-<div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="o">%</span><span class="n">code</span> <span class="p">{</span>
+
+<span class="o">%</span><span class="n">code</span> <span class="p">{</span>
     <span class="cp">#include</span> <span class="cpf">&#34;StlTextDriver.h&#34;</span><span class="cp">
 </span><span class="cp"></span><span class="p">}</span>
-</code></pre></div><p>While I understand that the %code requires section breaks a circular dependency by forward declaring the the driver, the distinction between these two sections seems unnecessray.  It&rsquo;s not realy a big deal at this point, so I brushed this off and kept working on the implementation of the parser.</p>
-<p>To keep things simple for the first implementation, I removed location-based tracking with the notion that I would add it later if became important.  When I tried to compile the generated parser code, I received an error about a missing definition of YY_NULLPTR.  This looked like a bug in bison to me.  At this point, a red flag goes up.  To work around it, I decided to define it manually in the scanner in a manner consistent with the C++11 standard:</p>
+</code></pre></div><p>Needing to worry about this circular dependency as a part of the grammar definition feels like an extra step.  And needing to define options to assert proper usage of the variant interface and to fully benefit from type safety also feels like an extra step.  It made me begin questioning whether I wanted to continue using bison (and therefore flex) for the program I&rsquo;m developing outside of work.  But I wanted to see this through, so I moved on to take a look at flex.</p>
+<h2 id="flex-c-challenges">Flex C++ Challenges</h2>
+<p>As with bison, I looked through the GNU documentation for guidance on how to use the C++ interface with flex with the same <a href="https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Scanner.html#Calc_002b_002b-Scanner">complete C++ example</a>.  I found some <a href="https://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_node/flex_19.html">additional GNU documentation</a> to be particularly useful here.</p>
+<p>To use the C++ interface of flex, the following declaration is required:</p>
+<div class="highlight"><pre class="chroma"><code class="language-C++" data-lang="C++"><span class="o">%</span><span class="n">option</span> <span class="n">c</span><span class="o">++</span>
+</code></pre></div><p>When I tried to compile the generated scanner code, I received an error about a missing definition of <code>YY_NULLPTR</code>.  This looked like a bug in flex to me.  To work around it, I defined it manually in a manner consistent with the C++11 standard:</p>
 <div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="cp">#ifndef YY_NULLPTR
 </span><span class="cp"></span>	<span class="cp">#define YY_NULLPTR nullptr
 </span><span class="cp">#endif
-</span></code></pre></div><p>Another red flag goes up when I saw that the example recommends defining which version of the skeleton to use for parsing:</p>
-<div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="o">%</span><span class="n">require</span> <span class="s">&#34;3.0.4&#34;</span>
-</code></pre></div><p>The C++ interface is starting to look less and less mature, further corroborated when the next red flag goes up.  The example recommends specifying an option to ensure that the parser is using the variant interface correctly:</p>
-<div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="o">%</span><span class="n">define</span> <span class="n">parse</span><span class="p">.</span><span class="n">assert</span>
-</code></pre></div><p>This seems unnecesary because the variant interface should be used correctly behind the scenes&hellip; automatically.</p>
-<p>Overlooking these red flags and attributing them to user error, the parser seems pretty straight-forward.  I decided to take a look at what the C++ interface for flex is like.</p>
-<p><a href="https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Scanner.html#Calc_002b_002b-Scanner">https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Scanner.html#Calc_002b_002b-Scanner</a></p>
-<p>A close at the example reveals that while the example may be complete, it&rsquo;s not using the C++ interface.  No option is being defined for this scanner to be C++.  It&rsquo;s also not even reentrant as no option is defined for this either.  I didn&rsquo;t notice this at first.  What tipped me off was how the fopen method was being used to open a file for yyin.  This is the C interface for file I/O.  I was expecting something from ifstream or ofstream if this was using the C++ interface.  Knowing that I was using the flex C interface with global variables and meshing it with the bison C++ interface with local variables felt just downright ugly.</p>
-<p>I found additional GNU documentation that I thought would help me better understand the C++ interface for flex: <a href="https://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_node/flex_19.html">https://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_node/flex_19.html</a></p>
-<p>The example looks straight-forward and the C++ interface looks straight-forward to use if I&rsquo;m just scanning and producing tokens.  I get a FlexLexer class to work with, and I just call lex to advance the stream.  Perfect!  But, I could not find documentatoin on how to bridge this with bison.</p>
-<p>I figured to best way to solve this problem would be to open the generated scanner code and begin an archeological dig.  I was immediately greeted with the following message:</p>
+</span></code></pre></div><p>Out of curiosity, I decided to take a look at the generated scanner code.  To my surprise, I was immediately greeted with the following message:</p>
 <div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="cm">/* The c++ scanner is a mess. The FlexLexer.h header file relies on the
 </span><span class="cm">* following macro. This is required in order to pass the c++-multiple-scanners
 </span><span class="cm">* test in the regression suite. We get reports that it breaks inheritance.
 </span><span class="cm">* We will address this in a future release of flex, or omit the C++ scanner
 </span><span class="cm">* altogether.
 </span><span class="cm">*/</span>
-</code></pre></div><p>Hmm&hellip; it seems that the C++ scanner is still under active development and needs more work, and could potentially be removed in the future.  Given the release cadence of flex and bison, this isn&rsquo;t going to be for a while.  At this point, I figured this is why the complete C++ example was written the way it was.</p>
-<p>Ignoring the uncertain future of the C++ scanner, I wanted to see if I could find other examples that might be able to help me out, given the GNU documentation wasn&rsquo;t getting me very far (which wasn&rsquo;t encouraging).  I found two complete examples of the C++ interface for flex and bison.  These seem to be the only realiable two in existence that have enough explanation around them to justify using them as a reference.</p>
-<p><a href="http://www.jonathanbeard.io/tutorials/FlexBisonC++">http://www.jonathanbeard.io/tutorials/FlexBisonC++</a>
-<a href="https://github.com/ezaquarii/bison-flex-cpp-example">https://github.com/ezaquarii/bison-flex-cpp-example</a></p>
-<p>The problem with both of these examples is they approach the problem slightly differently.  Sure, I could say that I like jonathanbeard&rsquo;s implemetation better because I can understand it better (because the documentation is better).  But that didn&rsquo;t mean I was necessarily doing it in the best way.</p>
-<p>To find a tie-breaker for determining the &ldquo;best&rdquo; way, I took a look at what other technical literature has to say about flex and bison.  O&rsquo;Rielly is a respected technical publisher, and I see many of their books at my workplace on coworker&rsquo;s shelves.  Their book Flex and Bison was published in 2009, which is a little dated.  After reading through a couple of the chapters, red flags go up again about the state of reentrant parsers and scanners, and of the C++ interface:</p>
-<p>&ldquo;Unfortunately, as of the time this book went to press (mid-2009), the code for flex pure scanners and yacc pure scanners is a mess. Bison’s calling sequence for a pure yylex() is different from flex’s, and the way they handle per-instance data is different. It’s possible to paper over the problems in the existing code and persuade pure scanners and parsers to work together, which is what we will do in this chapter, but before doing so, check the latest flex and bison documentation.&rdquo;</p>
-<p>&ldquo;As should be apparent by now, the C++ support in bison is nowhere near as mature as the C support, which is not surprising since it’s about 30 years newer.&rdquo;</p>
-<p>It seems not much has changed since 2009&hellip; and checking the latest flex and bison documentation like the book recommends has already proven to be a losing battle.</p>
-<p>The documentation for the C++ interface for flex and bison is obstensibly lacking, and for this program, while I have written grammar and scanner definitions which have a good chance at working because they appear to be logically correct, I am struggling with the implementation because the documentation is so poor for these tools.</p>
-<p>By this point, I have decided to completely drop flex and bison and look for a different solution for constructing the text STL parser.  I am interested in a solution that is designed to seamlessly integrate with C++, that doesn&rsquo;t have awkward code generation bits, and that have matured nicely over the years.  Perhaps such an alternative solution will also allow me to write a binary STL parser.  I don&rsquo;t want to drop a parsing solution altogether and just use regular expressions or manual bit sifting because they are not the easiest to maintain, and they are more error-prone than using tools that guarantee good use.</p>
-<p>Nonetheless, all I have to say about flex and bison is, it&rsquo;s been fun.  So long, farewell, auf wiedersehen goodbye!</p>
-<h2 id="references">References</h2>
-<ul>
-<li><a href="https://panthema.net/2007/flex-bison-cpp-example/flex-bison-cpp-example-0.1.4/doxygen-html/">https://panthema.net/2007/flex-bison-cpp-example/flex-bison-cpp-example-0.1.4/doxygen-html/</a></li>
-<li><a href="http://www.hwaci.com/sw/lemon/">http://www.hwaci.com/sw/lemon/</a></li>
-</ul>
+</code></pre></div><p><em>giggle</em></p>
+<p>It seems that the C++ interface for flex is still under active development and needs more work.  While at the end of the day it was a comical reminder that no software is perfect, it didn&rsquo;t get me closer to confidently achieving my goal.  It made me further question whether I wanted to continue using flex and bison.</p>
+<h2 id="last-ditch-effort">Last Ditch Effort</h2>
+<p>At this point, I wasn&rsquo;t sure I was using flex and bison correctly.  I still didn&rsquo;t have a working pure scanner and parser for a text STL file.  I wanted to see if I could find other examples to help me out, given the GNU documentation wasn&rsquo;t getting me very far.</p>
+<p>I found additional complete examples of the C++ interface for flex and bison.  One was from <a href="http://www.jonathanbeard.io/tutorials/FlexBisonC++">jonathanbeard</a> and another was from <a href="https://github.com/ezaquarii/bison-flex-cpp-example">ezaquarii</a>.  These seem to be the only two complete and reliable examples in existence (sarcastically, although only partially) that have enough explanation around them to justify using them as a reference.</p>
+<p>The problem with these examples is that they approach the problem slightly differently.  Sure, I could say that I like jonathanbeard&rsquo;s implementation better because I can understand it better and because the documentation is better.  But that didn&rsquo;t mean it was a best known method.  I need a tie-breaker of sorts to help me determine a best known method.</p>
+<h2 id="nail-in-the-coffin">Nail in the Coffin</h2>
+<p>I took a look at what technical literature had to say about flex and bison.  O&rsquo;Rielly is a respected technical publisher. I see many of their books at my workplace on the shelves of my coworkers.  Their book <em>Flex and Bison</em> was published in 2009, which is a little dated, but maybe not so bad given the rate at which these tools change.  After reading through a couple of the chapters, I found some telling commentary:</p>
+<blockquote>
+<p>Unfortunately, as of the time this book went to press (mid-2009), the code for flex pure scanners and yacc pure scanners is a mess. Bison’s calling sequence for a pure yylex() is different from flex’s, and the way they handle per-instance data is different. It’s possible to paper over the problems in the existing code and persuade pure scanners and parsers to work together, which is what we will do in this chapter, but before doing so, check the latest flex and bison documentation.</p>
+</blockquote>
+<blockquote>
+<p>As should be apparent by now, the C++ support in bison is nowhere near as mature as the C support, which is not surprising since it’s about 30 years newer.</p>
+</blockquote>
+<p>It would appear that my struggle with finding good documentation was dwarfed by the unfortunate state of the implementation of the C++ interface for flex and bison.  It explains the difficulty I have been having up until this point.</p>
+<h2 id="where-to-now">Where to Now?</h2>
+<p>Given this is where I had arrived, I decided to completely drop flex and bison and look for a different solution for constructing a pure scanner and parser for a text STL file.  I didn&rsquo;t want to drop a parsing solution altogether and just use regular expressions because they are not the easiest to maintain, and they are more error-prone than using tools that guarantee good use.</p>
+<p>I am interested in a solution that is designed to seamlessly integrate with C++, that maybe doesn&rsquo;t have awkward code generation bits, and that has matured nicely over the years.</p>
+<p>Nonetheless, all I have left to say about flex and bison is, it&rsquo;s been fun.  So long, farewell, auf wiedersehen, goodbye, flex and bison!</p>
 
         </p>
     </div>

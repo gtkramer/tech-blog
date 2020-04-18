@@ -3,17 +3,22 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>http://example.org/posts/adventures-flex-bision-cpp/</loc>
+    <lastmod>2018-01-13T15:32:00-07:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://example.org/posts/alternative-cpp-parsers/</loc>
+    <lastmod>2018-01-13T15:32:00-07:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://example.org/posts/</loc>
     <lastmod>2018-01-13T15:32:00-07:00</lastmod>
   </url>
   
   <url>
     <loc>http://example.org/</loc>
-    <lastmod>2018-01-13T15:32:00-07:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>http://example.org/posts/state-c-plus-plus-flex-bison/</loc>
     <lastmod>2018-01-13T15:32:00-07:00</lastmod>
   </url>
   
