@@ -6,7 +6,7 @@ draft: false
 
 ## Motivation and Goal
 
-The compilers class I took as an undergraduate at the University of Connecticut is the most challenging yet one of the most interesting classes I have ever taken.  The project-driven class gave students hands-on experience with writing a compiler by breaking the large task into smaller tasks over the course of the semester.  Specifically, we needed to write a compiler that translates C\-\-, a simple subset of C, to LLVM IR.  From there, we used the LLVM toolchian to finish compiling C\-\- to machine code.
+The compilers class I took as an undergraduate at the University of Connecticut is the most challenging yet one of the most interesting classes I have ever taken.  The project-driven class gave students hands-on experience with writing a compiler by breaking the large task into smaller tasks over the course of the semester.  Specifically, we needed to write a compiler that translates C\-\-, a simple subset of C, to LLVM IR.  From there, we used the LLVM toolchian to finish compiling our generated LLVM IR to machine code.
 
 To help with the scanner and the parser bits that are essential to any compiler, we used the GNU tools flex and bison.  These are time-tested text-processing programs known for not requiring any additional runtime or build requirements for the code they generate.  In this sense, the code they generate for doing the actual text processing is portable.  These text-processing programs are also mature with many years of development behind them, which makes them not a bad choice.
 
@@ -37,7 +37,7 @@ These are natural definitions analogous to the structure of the STL file format.
 
 I began looking through the GNU documentation for guidance on how to use the variant and C++ interfaces with bison.  I found [a complete C++ example](https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parser.html) to help me get going.
 
-After getting going, I ran into the same uncomfortable usage of bison that I remember seeing back when I was taking my compilers class.  Code is mixed with declarative syntax in different sections.  To configure bison in a good manner and to use the variant and C++ interfaces, the following declarations are required:
+To configure bison in a good manner and to use the variant and C++ interfaces, the following declarations are required:
 
 ``` c++
 %skeleton "lalr1.cc"
@@ -62,7 +62,7 @@ For grammar actions to use the Standard Template Library, they need to have deta
 }
 ```
 
-Needing to worry about this circular dependency as a part of the grammar definition feels like an extra step.  And needing to define options to assert proper usage of the variant interface and to fully benefit from type safety also feels like an extra step.  It made me begin questioning whether I wanted to continue using bison (and therefore flex) for the program I'm developing outside of work.  But I wanted to see this through, so I moved on to take a look at flex.
+After getting going, I ran into the same uncomfortable usage of bison that I remember seeing back when I was taking my compilers class with code being mixed with declarative syntax in different sections.  In addition, needing to worry about this circular dependency as a part of the grammar definition feels like an extra step.  And needing to define options to assert proper usage of the variant interface and to fully benefit from type safety also feels a little ugly.  It made me begin questioning whether I wanted to continue using bison (and therefore flex) for the program.  But I wanted to see this through, so I moved on to take a look at flex.
 
 ## Flex C++ Challenges
 
@@ -103,7 +103,7 @@ At this point, I wasn't sure I was using flex and bison correctly.  I still didn
 
 I found additional complete examples of the C++ interface for flex and bison.  One was from [jonathanbeard](http://www.jonathanbeard.io/tutorials/FlexBisonC++) and another was from [ezaquarii](https://github.com/ezaquarii/bison-flex-cpp-example).  These seem to be the only two complete and reliable examples in existence (sarcastically, although only partially) that have enough explanation around them to justify using them as a reference.
 
-The problem with these examples is that they approach the problem slightly differently.  Sure, I could say that I like jonathanbeard's implementation better because I can understand it better and because the documentation is better.  But that didn't mean it was a best known method.  I need a tie-breaker of sorts to help me determine a best known method.
+The problem with these examples is that they approach the problem slightly differently.  Sure, I could say that I like jonathanbeard's implementation better because I can understand it better and because the documentation is better.  But that didn't mean it was a best known method.  I needed a tie-breaker of sorts to help me determine a best known method.
 
 ## Nail in the Coffin
 
@@ -118,7 +118,5 @@ It would appear that my struggle with finding good documentation was dwarfed by 
 ## Where to Now?
 
 Given this is where I had arrived, I decided to completely drop flex and bison and look for a different solution for constructing a pure scanner and parser for a text STL file.  I didn't want to drop a parsing solution altogether and just use regular expressions because they are not the easiest to maintain, and they are more error-prone than using tools that guarantee good use.
-
-I am interested in a solution that is designed to seamlessly integrate with C++, that maybe doesn't have awkward code generation bits, and that has matured nicely over the years.
 
 Nonetheless, all I have left to say about flex and bison is, it's been fun.  So long, farewell, auf wiedersehen, goodbye, flex and bison!
