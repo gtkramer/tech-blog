@@ -107,6 +107,6 @@ I took a look at what technical literature had to say about flex and bison to se
 
 ## Where to Now?
 
-Given it has been difficult to work with low quality code, I decided to drop flex and bison and look at alternative tools that can generate a parser for a text STL file.  I didn't want to drop a parsing solution altogether and just use regular expressions because they are not the easiest to maintain and they are more error-prone than using tools that guarantee good use.  Lemon, Boost Spirit, and ANTLR look like intersting options.
+Given it has been difficult to work with low quality code, as I still didn't have a working parser generated for a text STL file, I decided to drop flex and bison and look at alternative options.  I didn't want to drop a parsing solution altogether and just use regular expressions because they are not the easiest to maintain and they are more error-prone than using tools that guarantee good use.  Lemon, Boost Spirit, and ANTLR all look like intersting options.
 
-Nonetheless, all I have left to say about flex and bison is, it's been fun.  So long, farewell, auf wiedersehen, goodbye, flex and bison!
+Nonetheless, all I have left to say is, "So long, farewell, auf wiedersehen, goodbye, flex and bison!"
