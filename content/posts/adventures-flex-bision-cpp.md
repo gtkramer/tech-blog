@@ -1,6 +1,7 @@
 ---
 title: "Adventures Using Flex and Bison with C++"
 date: 2018-01-13T15:32:00-07:00
+tags: ["bison", "flex", "c++", "parser", "lexer", "stl"]
 draft: false
 ---
 
