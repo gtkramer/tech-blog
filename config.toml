@@ -12,12 +12,6 @@ github = "https://github.com/gtkramer"
 linkedin = "https://www.linkedin.com/in/george-kramer-3816691a6"
 
 [[menu.main]]
-identifier = "about"
-name = "About"
-url = "/about/"
-weight = 1
-
-[[menu.main]]
 identifier = "tags"
 name = "Tags"
 url = "/tags/"
